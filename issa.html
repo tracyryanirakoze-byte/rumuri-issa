@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pour toi et moi</title>
+    <link rel="stylesheet" href="issa.css" />
+  </head>
+  <body>
+    <div class="background-glow"></div>
+
+    <section class="gate" id="gate">
+      <div class="card">
+        <p class="eyebrow">Espace réservé</p>
+        <h1>Pour vous deux</h1>
+        <p class="intro">
+          Cette page a été créée pour un amour secret, doux et unique.
+          Entre le mot de passe pour entrer dans votre monde.
+        </p>
+
+        <form id="accessForm">
+          <input
+            type="password"
+            id="secretInput"
+            placeholder="Mot secret"
+            autocomplete="off"
+          />
+          <button type="submit">Entrer</button>
+        </form>
+        <p id="errorMsg" class="error">Mot de passe incorrect.</p>
+      </div>
+    </section>
+
+    <div class="toast" id="toast">💖 Bienvenue dans votre espace secret</div>
+    <div class="presence-alert" id="presenceAlert">💞 Votre amour vient d’ouvrir la page</div>
+
+    <main class="love-page" id="lovePage">
+      <div class="heart"></div>
+      <h2>Tu es mon soleil, mon refuge et mon bonheur</h2>
+      <p>
+        Dans cette page, il n’y a que deux âmes, deux regards, et une seule
+        histoire qui mérite d’être chérie.
+      </p>
+
+      <div class="message-box">
+        <p>“Je t’aime plus que des mots ne peuvent l’exprimer.”</p>
+        <span>— À toi, mon amour</span>
+      </div>
+
+      <div class="notes">
+        <div>💖 Je t’aime</div>
+        <div>💞 I love you</div>
+        <div>🌙 Te amo</div>
+        <div>✨ Ich liebe dich</div>
+      </div>
+
+      <div class="message-spacer"></div>
+
+      <button type="button" class="open-chat" id="openChat">💬 Ouvrir la messagerie</button>
+
+      <div class="chat-box" id="chatBox" hidden>
+        <div class="chat-header-row">
+          <div class="chat-header">💬 Messagerie secrète</div>
+          <button type="button" class="clear-chat" id="clearChat">Effacer</button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <form class="chat-form" id="chatForm">
+          <select id="chatAuthor">
+            <option value="Moi">Moi</option>
+            <option value="Toi">Toi</option>
+          </select>
+          <input
+            id="chatInput"
+            type="text"
+            maxlength="140"
+            placeholder="Écris un petit mot..."
+            autocomplete="off"
+          />
+          <button type="submit">Envoyer</button>
+        </form>
+      </div>
+    </main>
+
+    <script>
+      const form = document.getElementById('accessForm');
+      const input = document.getElementById('secretInput');
+      const errorMsg = document.getElementById('errorMsg');
+      const gate = document.getElementById('gate');
+      const lovePage = document.getElementById('lovePage');
+
+      const secretCode = 'madameissa';
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (input.value.trim() === secretCode) {
+          gate.style.display = 'none';
+          lovePage.classList.add('show');
+          announceAccess();
+          showToast();
+        } else {
+          errorMsg.style.opacity = '1';
+          input.value = '';
+          input.focus();
+        }
+      });
+
+      const toast = document.getElementById('toast');
+      const presenceAlert = document.getElementById('presenceAlert');
+      const accessStorageKey = 'secret-love-access';
+      const accessChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('secret-love-access') : null;
+      let lastAccessTimestamp = 0;
+
+      function showToast() {
+        toast.classList.add('show');
+        clearTimeout(showToast.timeout);
+        showToast.timeout = setTimeout(() => {
+          toast.classList.remove('show');
+        }, 2600);
+
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAI2AAABAAABABgAABmHAAI7AAABAAABABoAAAABAAEAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==');
+          audio.volume = 0.18;
+          audio.play().catch(() => {});
+        } catch (error) {
+          console.log('Audio non disponible');
+        }
+      }
+
+      function showPresenceAlert(message = '💞 Votre amour vient d’ouvrir la page') {
+        presenceAlert.textContent = message;
+        presenceAlert.classList.add('show');
+        clearTimeout(showPresenceAlert.timeout);
+        showPresenceAlert.timeout = setTimeout(() => {
+          presenceAlert.classList.remove('show');
+        }, 2800);
+      }
+
+      function announceAccess() {
+        const payload = {
+          message: '💞 Votre amour vient d’ouvrir l’espace secret',
+          timestamp: Date.now(),
+        };
+
+        localStorage.setItem(accessStorageKey, JSON.stringify(payload));
+        if (accessChannel) {
+          accessChannel.postMessage(payload);
+        }
+        lastAccessTimestamp = payload.timestamp;
+        showPresenceAlert(payload.message);
+      }
+
+      function handleAccessEvent(payload) {
+        if (!payload || payload.timestamp <= lastAccessTimestamp) {
+          return;
+        }
+
+        lastAccessTimestamp = payload.timestamp;
+        showPresenceAlert(payload.message);
+      }
+
+      const chatForm = document.getElementById('chatForm');
+      const chatInput = document.getElementById('chatInput');
+      const chatAuthor = document.getElementById('chatAuthor');
+      const chatMessages = document.getElementById('chatMessages');
+      const storageKey = 'secret-love-chat';
+
+      function loadMessages() {
+        try {
+          return JSON.parse(localStorage.getItem(storageKey) || '[]');
+        } catch {
+          return [];
+        }
+      }
+
+      function saveMessages(messages) {
+        localStorage.setItem(storageKey, JSON.stringify(messages));
+      }
+
+      function renderMessages() {
+        const messages = loadMessages();
+        chatMessages.innerHTML = '';
+
+        if (!messages.length) {
+          const empty = document.createElement('p');
+          empty.className = 'chat-empty';
+          empty.textContent = 'Écris le premier mot d’amour...';
+          chatMessages.appendChild(empty);
+          return;
+        }
+
+        messages.forEach((message) => {
+          const bubble = document.createElement('div');
+          bubble.className = `chat-bubble ${message.author === 'Moi' ? 'mine' : 'theirs'}`;
+          bubble.innerHTML = `
+            <strong>${message.author}</strong>
+            <span>${message.text}</span>
+          `;
+          if (message.justSent) {
+            bubble.classList.add('just-sent');
+          }
+          chatMessages.appendChild(bubble);
+        });
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      chatForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        const messages = loadMessages();
+        messages.push({
+          author: chatAuthor.value,
+          text,
+          justSent: true,
+        });
+
+        saveMessages(messages);
+        chatInput.value = '';
+        renderMessages();
+      });
+
+      const clearChatButton = document.getElementById('clearChat');
+      const openChatButton = document.getElementById('openChat');
+      const chatBox = document.getElementById('chatBox');
+
+      openChatButton.addEventListener('click', () => {
+        chatBox.hidden = false;
+        openChatButton.style.display = 'none';
+        chatInput.focus();
+      });
+
+      clearChatButton.addEventListener('click', () => {
+        localStorage.removeItem(storageKey);
+        renderMessages();
+      });
+
+      window.addEventListener('storage', (event) => {
+        if (event.key === accessStorageKey && event.newValue) {
+          handleAccessEvent(JSON.parse(event.newValue));
+        }
+        renderMessages();
+      });
+
+      if (accessChannel) {
+        accessChannel.addEventListener('message', (event) => {
+          handleAccessEvent(event.data);
+        });
+      }
+
+      renderMessages();
+    </script>
+  </body>
+</html>
